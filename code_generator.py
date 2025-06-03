@@ -1,8 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Automated Random Code Generator
+Generates realistic code files in multiple programming languages
+with human-like commit patterns for GitHub contributions.
+"""
+
 import os
 import random
 import string
 import subprocess
 import json
+import time
 from datetime import datetime
 import shutil
 
@@ -1521,7 +1529,43 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
         
         return filename, code_content, file_type
     
-    def generate_commit_message(self, filename, file_type):
+    def get_realistic_interval(self):
+        """Generate realistic human-like commit intervals"""
+        # Get current hour (0-23)
+        current_hour = time.localtime().tm_hour
+        current_day = time.localtime().tm_wday  # 0=Monday, 6=Sunday
+        
+        # Define realistic working patterns
+        if current_day >= 5:  # Weekend (Saturday=5, Sunday=6)
+            # Less activity on weekends, longer intervals
+            base_minutes = random.randint(120, 480)  # 2-8 hours
+        elif 9 <= current_hour <= 17:  # Working hours (9 AM - 5 PM)
+            # More frequent commits during work hours
+            base_minutes = random.randint(15, 120)  # 15 minutes - 2 hours
+        elif 18 <= current_hour <= 22:  # Evening coding (6 PM - 10 PM)
+            # Moderate activity in evening
+            base_minutes = random.randint(30, 180)  # 30 minutes - 3 hours
+        elif 6 <= current_hour <= 8:  # Early morning (6 AM - 8 AM)
+            # Light activity in early morning
+            base_minutes = random.randint(60, 240)  # 1-4 hours
+        else:  # Late night/early morning (11 PM - 5 AM)
+            # Very rare commits at night
+            base_minutes = random.randint(240, 720)  # 4-12 hours
+        
+        # Add some randomness to make it more natural
+        variation = random.randint(-20, 20)  # ±20 minutes variation
+        final_minutes = max(5, base_minutes + variation)  # Minimum 5 minutes
+        
+        return final_minutes
+    
+    def get_realistic_commit_count_per_day(self):
+        """Get realistic number of commits per day"""
+        current_day = time.localtime().tm_wday
+        
+        if current_day >= 5:  # Weekend
+            return random.randint(1, 4)  # 1-4 commits on weekends
+        else:  # Weekday
+            return random.randint(3, 12)  # 3-12 commits on weekdays
         """Generate a commit message based on the generated code"""
         actions = [
             "Add", "Create", "Implement", "Generate", "Build", "Develop",
@@ -1645,25 +1689,59 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
             print(f"[ERROR] Error: {e}")
             return False, None, None
     
-    def run_continuous(self, interval_minutes=30, max_commits=None):
-        """Run the generator continuously"""
-        import time
+    def run_continuous(self, max_commits=None):
+        """Run the generator continuously with realistic human-like patterns"""
         
         commit_count = 0
-        print(f"[STARTING] Starting random code generator...")
+        daily_commit_count = 0
+        last_commit_date = None
+        
+        print(f"[STARTING] Starting realistic random code generator...")
         print(f"[REPO] Repository: {self.repo_path}")
-        print(f"[INTERVAL] Interval: {interval_minutes} minutes")
+        print("[INFO] Using human-like commit patterns:")
+        print("  - Weekdays: 3-12 commits (more during work hours)")
+        print("  - Weekends: 1-4 commits (relaxed schedule)")
+        print("  - Night time: Very rare commits")
+        print("  - Variable intervals: 15 minutes to 12 hours")
         if max_commits:
             print(f"[TARGET] Max commits: {max_commits}")
-        print("=" * 50)
+        print("=" * 60)
         
         while True:
             try:
+                current_date = time.strftime('%Y-%m-%d')
+                
+                # Reset daily counter if it's a new day
+                if last_commit_date != current_date:
+                    daily_commit_count = 0
+                    last_commit_date = current_date
+                    target_commits_today = self.get_realistic_commit_count_per_day()
+                    print(f"[NEW DAY] {current_date} - Target commits today: {target_commits_today}")
+                
+                # Check if we've reached today's commit limit
+                if daily_commit_count >= target_commits_today:
+                    # Wait until next day
+                    next_day_seconds = 86400 - (time.time() % 86400)  # Seconds until midnight
+                    hours = int(next_day_seconds // 3600)
+                    minutes = int((next_day_seconds % 3600) // 60)
+                    print(f"[DAILY LIMIT] Reached daily commit target. Waiting {hours}h {minutes}m until tomorrow...")
+                    time.sleep(next_day_seconds + 60)  # Wait until next day + 1 minute
+                    continue
+                
+                # Get realistic interval based on current time
+                interval_minutes = self.get_realistic_interval()
+                
+                # Show current time context
+                current_hour = time.localtime().tm_hour
+                current_day_name = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][time.localtime().tm_wday]
+                
                 success, filename, commit_message = self.create_and_commit_file()
                 
                 if success:
                     commit_count += 1
-                    print(f"[STATS] Total commits: {commit_count}")
+                    daily_commit_count += 1
+                    
+                    print(f"[STATS] Total commits: {commit_count} | Today: {daily_commit_count}/{target_commits_today}")
                     
                     if max_commits and commit_count >= max_commits:
                         print(f"[COMPLETE] Reached maximum commits ({max_commits}). Stopping.")
@@ -1671,8 +1749,12 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
                 else:
                     print("[WARNING] Commit failed, continuing...")
                 
-                print(f"[WAITING] Waiting {interval_minutes} minutes until next commit...")
-                print("=" * 50)
+                # Show next commit timing
+                next_time = time.time() + (interval_minutes * 60)
+                next_time_str = time.strftime('%H:%M', time.localtime(next_time))
+                
+                print(f"[SCHEDULE] Next commit in {interval_minutes} minutes at {next_time_str} ({current_day_name})")
+                print("=" * 60)
                 
                 time.sleep(interval_minutes * 60)  # Convert to seconds
                 
@@ -1681,8 +1763,10 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
                 break
             except Exception as e:
                 print(f"[ERROR] Unexpected error: {e}")
-                print(f"[RETRY] Waiting {interval_minutes} minutes before retry...")
-                time.sleep(interval_minutes * 60)
+                # Use a reasonable fallback interval on error
+                fallback_minutes = random.randint(30, 120)
+                print(f"[RETRY] Waiting {fallback_minutes} minutes before retry...")
+                time.sleep(fallback_minutes * 60)
 
 def main():
     """Main function to run the random code generator"""
@@ -1690,13 +1774,12 @@ def main():
     # Automatic configuration - no user input required
     REPO_PATH = os.getcwd()  # Use current directory
     REMOTE_URL = "https://github.com/jex23/radom_code.git"
-    INTERVAL_MINUTES = 5  # Commit every 5 minutes
     MAX_COMMITS = None  # Unlimited commits (set to a number to limit)
     
-    print("[STARTING] Automated random code generator...")
+    print("[STARTING] Automated realistic random code generator...")
     print(f"[REPO] Repository: {REPO_PATH}")
     print(f"[REMOTE] Remote: {REMOTE_URL}")
-    print(f"[INTERVAL] Interval: {INTERVAL_MINUTES} minutes")
+    print("[TIMING] Using human-like patterns - variable intervals throughout the day")
     
     # Check if it's a git repository
     if not os.path.exists(os.path.join(REPO_PATH, '.git')):
@@ -1709,8 +1792,8 @@ def main():
     # Create generator instance
     generator = RandomCodeGenerator(REPO_PATH)
     
-    # Run continuously
-    generator.run_continuous(INTERVAL_MINUTES, MAX_COMMITS)
+    # Run continuously with realistic patterns
+    generator.run_continuous(MAX_COMMITS)
 
 if __name__ == "__main__":
     main()
