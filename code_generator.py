@@ -7,9 +7,8 @@ from datetime import datetime
 import shutil
 
 class RandomCodeGenerator:
-    def __init__(self, repo_path, github_token=None):
+    def __init__(self, repo_path):
         self.repo_path = repo_path
-        self.github_token = github_token
         
         # Code templates for different file types
         self.code_templates = {
@@ -1699,13 +1698,11 @@ def main():
     print(f"[REMOTE] Remote: {REMOTE_URL}")
     print(f"[INTERVAL] Interval: {INTERVAL_MINUTES} minutes")
     
-    # Check if it's a git repository, if not, initialize and set remote
+    # Check if it's a git repository
     if not os.path.exists(os.path.join(REPO_PATH, '.git')):
-        print("[SETUP] Initializing git repository...")
-        os.chdir(REPO_PATH)
-        subprocess.run(['git', 'init'], check=True)
-        subprocess.run(['git', 'remote', 'add', 'origin', REMOTE_URL], check=True)
-        print("[SUCCESS] Git repository initialized and remote added!")
+        print("[ERROR] This is not a git repository! Please clone the repository first.")
+        print("Run: git clone https://github.com/jex23/radom_code.git")
+        return
     else:
         print("[SUCCESS] Git repository found!")
     
