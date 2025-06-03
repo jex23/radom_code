@@ -1531,47 +1531,38 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
     
     def get_realistic_interval(self):
         """Generate realistic human-like commit intervals"""
-        # Get current hour (0-23)
         current_hour = time.localtime().tm_hour
         current_day = time.localtime().tm_wday  # 0=Monday, 6=Sunday
-        
-        # Define realistic working patterns
-        if current_day >= 5:  # Weekend (Saturday=5, Sunday=6)
-            # Less activity on weekends, longer intervals
-            base_minutes = random.randint(120, 480)  # 2-8 hours
-        elif 9 <= current_hour <= 17:  # Working hours (9 AM - 5 PM)
-            # More frequent commits during work hours
-            base_minutes = random.randint(15, 120)  # 15 minutes - 2 hours
-        elif 18 <= current_hour <= 22:  # Evening coding (6 PM - 10 PM)
-            # Moderate activity in evening
-            base_minutes = random.randint(30, 180)  # 30 minutes - 3 hours
-        elif 6 <= current_hour <= 8:  # Early morning (6 AM - 8 AM)
-            # Light activity in early morning
-            base_minutes = random.randint(60, 240)  # 1-4 hours
-        else:  # Late night/early morning (11 PM - 5 AM)
-            # Very rare commits at night
-            base_minutes = random.randint(240, 720)  # 4-12 hours
-        
-        # Add some randomness to make it more natural
-        variation = random.randint(-20, 20)  # ±20 minutes variation
-        final_minutes = max(5, base_minutes + variation)  # Minimum 5 minutes
-        
+
+        if current_day >= 5:  # Weekend
+            base_minutes = random.randint(120, 480)
+        elif 9 <= current_hour <= 17:  # Work hours
+            base_minutes = random.randint(15, 120)
+        elif 18 <= current_hour <= 22:  # Evening
+            base_minutes = random.randint(30, 180)
+        elif 6 <= current_hour <= 8:  # Early morning
+            base_minutes = random.randint(60, 240)
+        else:  # Late night
+            base_minutes = random.randint(240, 720)
+
+        variation = random.randint(-20, 20)
+        final_minutes = max(5, base_minutes + variation)
         return final_minutes
-    
+
     def get_realistic_commit_count_per_day(self):
         """Get realistic number of commits per day"""
         current_day = time.localtime().tm_wday
-        
         if current_day >= 5:  # Weekend
-            return random.randint(1, 4)  # 1-4 commits on weekends
+            return random.randint(1, 4)
         else:  # Weekday
-            return random.randint(3, 12)  # 3-12 commits on weekdays
-        """Generate a commit message based on the generated code"""
+            return random.randint(3, 12)
+
+    def generate_commit_message(self, filename, file_type):
+        """Generate a commit message based on the generated code file."""
         actions = [
             "Add", "Create", "Implement", "Generate", "Build", "Develop",
             "Update", "Refactor", "Optimize", "Enhance"
         ]
-        
         descriptions = {
             'python': [
                 "utility function", "data processor", "helper module", "automation script",
@@ -1618,11 +1609,10 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
                 "animation effects", "grid layout", "utility classes"
             ]
         }
-        
+
         action = random.choice(actions)
-        description = random.choice(descriptions[file_type])
-        
-        # Add some variety to commit messages
+        description = random.choice(descriptions.get(file_type, ["code changes"]))
+
         message_formats = [
             f"{action} {description} in {filename}",
             f"{action} new {description} ({filename})",
@@ -1632,10 +1622,48 @@ public class {interface_name}Service : I{interface_name}<{interface_name}Entity>
             f"{action} optimized {description}",
             f"{action} {description} with enhanced features"
         ]
-        
+
         return random.choice(message_formats)
-    
+
     def create_and_commit_file(self):
+        """Generate code, create file, and commit to git"""
+        try:
+            filename, code_content, file_type = self.generate_random_code()
+            file_path = os.path.join(self.repo_path, filename)
+
+            # Backup if exists
+            backup_path = None
+            if os.path.exists(file_path):
+                backup_path = self._backup_existing_file(filename)
+
+            # Write new code
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(code_content)
+
+            if backup_path:
+                print(f"[SUCCESS] Updated file: {filename} (backup created)")
+            else:
+                print(f"[SUCCESS] Created new file: {filename}")
+
+            original_dir = os.getcwd()
+            os.chdir(self.repo_path)
+            try:
+                subprocess.run(['git', 'add', '.'], check=True)
+                commit_message = self.generate_commit_message(filename, file_type)
+                subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+                print(f"[SUCCESS] Committed: {commit_message}")
+                subprocess.run(['git', 'push'], check=True)
+                print(f"[SUCCESS] Pushed to remote repository")
+                return True, filename, commit_message
+            finally:
+                os.chdir(original_dir)
+
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] Git command failed: {e}")
+            return False, None, None
+        except Exception as e:
+            print(f"[ERROR] Error: {e}")
+            return False, None, None
         """Generate code, create file, and commit to git"""
         try:
             # Generate random code with unique filename
