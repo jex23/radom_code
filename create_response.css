@@ -1,0 +1,63 @@
+/* Random CSS styles generated on 2025-06-04 */
+
+:root {
+    --primary-color: #95b8fd;
+    --secondary-color: #c0c770;
+    --accent-color: #1b6197;
+    --font-size-base: 15px;
+    --border-radius: 8px;
+}
+
+.random-container {
+    max-width: 1161px;
+    margin: 0 auto;
+    padding: 18px;
+    background: linear-gradient(347deg, var(--primary-color), var(--secondary-color));
+    border-radius: var(--border-radius);
+}
+
+.random-card {
+    background: white;
+    padding: 17px;
+    margin: 17px 0;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: transform 0.5s ease;
+}
+
+.random-card:hover {
+    transform: translateY(-7px);
+}
+
+.random-button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 16px 18px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    transition: all 0.3s ease;
+}
+
+.random-button:hover {
+    opacity: 0.8;
+    transform: scale(1.02);
+}
+
+.random-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(226px, 1fr));
+    gap: 23px;
+    margin: 35px 0;
+}
+
+@media (max-width: 601px) {
+    .random-container {
+        padding: 10px;
+    }
+    
+    .random-grid {
+        grid-template-columns: 1fr;
+    }
+}
